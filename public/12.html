@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Color Blocks</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/odometer/themes/odometer-theme-default.css">
+<style>
+body {
+  margin: 0;
+  font-family: 'Roboto', sans-serif;
+}
+
+.container {
+  display: flex;
+  flex-direction: row; /* Arrange items in a row */
+  justify-content: space-between; /* Space out columns */
+  width: 1920px;
+  height: 805px;
+}
+
+.column {
+  width: 50%; /* Each column takes half the container */
+}
+
+.color {
+  height: 194.95px;
+  position: relative;
+  display: flex;
+  flex-direction: column; /* Stack elements vertically */
+  justify-content: center; /* Center items vertically */
+  align-items: flex-start; /* Align items to the left */
+  overflow: hidden;
+}
+
+.color-1 { background-color: yellow; }
+.color-2 { background-color: black; }
+.color-3 { background-color: red; }
+.color-4 { background-color: blue; }
+.color-5 { background-color: green; }
+.color-6 { background-color: magenta; }
+.color-7 { background-color: orange; }
+.color-8 { background-color: cyan; }
+.color-9 { background-color: lightgray; }
+.color-10 { background-color: blueviolet; }
+
+.color-name {
+  color: white;
+  font-size: 24px; /* Adjust as necessary */
+  margin: 10px 10px 0; /* Add margin to the top and sides */
+}
+
+.counter {
+  color: white;
+  font-size: 138px; /* Increased size */
+  font-weight: bold;
+  margin-left: 10px; /* Align left */
+}
+</style>
+</head>
+<body>
+
+<div class="container" id="color-container">
+  <div class="column" id="column1"></div>
+  <div class="column" id="column2"></div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/odometer/odometer.js"></script>
+<script>
+const colors = {
+  yellow: 'yellow',
+  black: 'black',
+  red: 'red',
+  blue: 'blue',
+  green: 'green',
+  pink: 'pink',
+  orange: 'orange',
+  cyan: 'cyan',
+  white: 'white',
+  purple: 'purple'
+};
+
+const colorValues = {}; // Object to store the counts for sorting
+const odometerInstances = {}; // Object to store odometer instances
+
+const formatNumber = (num) => {
+  return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+};
+
+const createColorBlocks = () => {
+  const column1 = document.getElementById('column1');
+  const column2 = document.getElementById('column2');
+  column1.innerHTML = '';
+  column2.innerHTML = '';
+
+  Object.keys(colors).forEach((colorKey, index) => {
+    const colorDiv = document.createElement('div');
+    colorDiv.className = `color color-${index + 1}`;
+    colorDiv.innerHTML = `
+      <div class="color-name">${colorKey.charAt(0).toUpperCase() + colorKey.slice(1)}</div>
+      <div class="counter" id="counter-${colorKey}">0</div>
+    `;
+
+    // Append to the appropriate column
+    if (index < 5) {
+      column1.appendChild(colorDiv);
+    } else {
+      column2.appendChild(colorDiv);
+    }
+
+    // Initialize odometer instance
+    odometerInstances[colorKey] = new Odometer({
+      el: colorDiv.querySelector('.counter'),
+      value: 0,
+      format: '(,ddd)',
+      theme: 'default'
+    });
+  });
+};
+
+const updateColorDisplay = () => {
+  // Sort colors by clicks
+  const sortedColors = Object.entries(colorValues).sort((a, b) => b[1] - a[1]);
+
+  sortedColors.forEach(([colorKey]) => {
+    const counterValue = colorValues[colorKey];
+    odometerInstances[colorKey].update(counterValue);
+  });
+};
+
+const initializeCounters = () => {
+  Object.entries(colors).forEach(([colorKey]) => {
+    const apiUrl = `https://e1904e13-4463-46c6-a260-6267bf513bbd-00-2tlkt3zxqwlxe.worf.replit.dev/api/color/${colorKey}`;
+
+    const updateCounter = () => {
+      fetch(apiUrl)
+        .then(response => {
+          if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+          }
+          return response.json();
+        })
+        .then(data => {
+          const clicks = data.clicks; // Get the "clicks" value from the API response
+          colorValues[colorKey] = clicks; // Update the colorValues object
+          
+          // Update the display
+          updateColorDisplay();
+        })
+        .catch(error => console.error(`Error fetching data for ${colorKey}:`, error));
+    };
+
+    // Initial fetch
+    updateCounter();
+    // Update every 2 seconds
+    setInterval(updateCounter, 2000);
+  });
+};
+
+// Create color blocks and initialize
+createColorBlocks();
+initializeCounters();
+
+</script>
+
+</body>
+</html>
